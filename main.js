@@ -3,39 +3,10 @@
  */
 "use strict";
 
-function init() {
-      var i, j;
-
-    var field = [];
-
-    var current = 0;
-    var offset = 4;
-    for (i = 0; i < 16; i++) {
-
-        current = Math.floor(Math.random() * 16);
-
-        if (field.length==0){
-            field.push(current);
-        }
-        else
-       if(field.indexOf(current)>=0) {
-           do {
-               current = Math.floor(Math.random() * 16);
-           }
-           while (field.indexOf(current) >= 0);
-           field.push(current);
-       }
-        else
-           field.push(current);
-    }
-
-    return field;
-}
-
 var has_solution = function (field) {
     var zero_index = field.indexOf(0);
     var offset = 4;
-    var zero_row = Math.floor(zero_index / offset)+1;
+    var zero_row = ~~(zero_index / offset) + 1;
     var N = 0;
 
     for (var i = 0; i < 16; i++) {
@@ -43,7 +14,7 @@ var has_solution = function (field) {
         if (field[i] != 0) {
             field.forEach(function (element, index) {
 
-                if (element != 0 && index > i && element < field[i] &&  element != 0) {
+                if (element != 0 && index > i && element < field[i] && element != 0) {
                     less_count++;
                 }
             });
@@ -74,27 +45,29 @@ var valid_move = function (field) {
     var moviable = [];
     var offset = 4;
     var start = field.indexOf(0);
-    var has_left_cell = (start - 1) >= 0 && Math.floor((start - 1) / offset) == Math.floor(start / offset);
-    var has_right_cell = (start + 1) < field.length && Math.floor((start + 1) / offset) == Math.floor(start / offset);
+    var has_left_cell = (start % offset) - 1 >= 0;
+    var has_right_cell = (start % offset) + 1 < offset;
     var has_top_cell = start - offset >= 0;
-    var has_bootom_cell = start + offset < field.length;
+    var has_bottom_cell = start + offset < field.length;
 
     if (has_left_cell)
-        moviable.push(start - 1);
+        moviable.push(flip(copy(field), start, start - 1));
     if (has_right_cell)
-        moviable.push(start + 1);
+        moviable.push(flip(copy(field), start, start + 1));
     if (has_top_cell)
-        moviable.push(start - offset);
-    if (has_bootom_cell)
-        moviable.push(start + offset);
+        moviable.push(flip(copy(field), start, start - offset));
+    if (has_bottom_cell)
+        moviable.push(flip(copy(field), start, start + offset));
 
     return moviable;
 };
+
+
 var h2 = function (state) {
     var dist = 0;
 
     for (var i = 0; i < state.length; i++) {
-        if (state[i].number != 0)
+        if (state[i] != 0)
             dist += manhattan(i, state[i] - 1);
         else
             dist += manhattan(i, 15);
@@ -117,89 +90,152 @@ var is_same_array = function (array1, array2) {
     return equal;
 };
 
+function shuffle(N){
+    var state=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 0];
+    //var zero=state.indexOf(0);
+    var closed={};
+    for (var i=0;i<N;i++){
+        var child=valid_move(state);
+        var rand=~~(Math.random()*child.length);
+        if(finded_in_close(closed,child[rand].toString())){
+            i--;
+            continue;
+        }
+
+       state = child[rand];
+        closed[child[rand].toString()]=true;
+    }
+    return state;
+
+
+}
+function init() {
+    //return [2, 6, 12, 11, 0, 3, 4, 14, 9, 5, 1, 15, 8, 7, 13, 10];
+    //return [ 1, 14, 2, 7, 0, 3, 12, 15, 10, 6, 11, 8, 4, 9, 13, 5 ];
+    //return [0, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1];
+    //return [15,11,12,0,5,13,2,1,14,7,4,3,10,6,9,8];
+    //return [2,6,4,3, 9,5,7,1, 13,15,12,0,8,10,14,11];
+    //return [10,3,5,15,12,8,7,0,11,1,4,14,6,2,13,9];
+    return [1,2,3,4,5,6,7,8,9,10,11,12,0,13,14,15];
+
+    var i, j;
+
+    var field = [];
+
+    var current = 0;
+    var offset = 4;
+
+do {
+    for (i = 0; i < 16; i++) {
+
+        current = Math.floor(Math.random() * 16);
+
+        if (field.length == 0) {
+            field.push(current);
+        }
+        else if (field.indexOf(current) >= 0) {
+            do {
+                current = Math.floor(Math.random() * 16);
+            }
+            while (field.indexOf(current) >= 0);
+            field.push(current);
+        }
+        else
+            field.push(current);
+    }
+}
+while(h2(field)>40);
+
+    return field;
+}
+
+
+function sorter(array) {
+    array.sort(function (a, b) {
+        return a.h2 - b.h2;
+    });
+}
+
+function finded_in_close(close, hash) {
+    return (close[hash] !== undefined);
+}
+
 var solver = function (field) {
-    var close = [];
-    var open = [];
-    var node = {};
-    var goal = [1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13,14,15,0];
 
-    node.state = copy(field);
-    node.parent=null;
-    node.h2 = h2(node.state);
-   // node.g = 0;
-   // node.cost = node.h2 + node.cost;
+    var open = [],
+        close = {},
+        goal = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 0],
+        root = {};
 
-    open.push(node);
+    root.state = copy(field);
+    root.h2 = h2(root.state);
+    root.parent = null;
+
+    open.push(root);
 
     while (open.length != 0) {
+
+        sorter(open);
+
+        var current_node = open[0];
+
+        if (is_same_array(current_node.state, goal))
+            break;
+
         open.splice(0, 1);
-        close.push(node);
 
-        if (is_same_array(node.state, goal)) {
-            return close;
+        var child = valid_move(current_node.state);
+        var child_len = child.length;
+
+        close[current_node.state.toString()] = true;
+
+        for (var i = 0; i < child_len; i++) {
+            var current = child[i];
+            var current_hash = current.toString();
+
+            if (finded_in_close(close, current_hash))
+                continue;
+
+            open.push({
+                state:current,
+                parent:current_node,
+                h2:h2(current)
+            });
         }
 
-        var child = valid_move(node.state);
-
-        for (var i = 0; i < child.length; i++) {
-            var next_node = {};
-            next_node.state = flip(copy(node.state), node.state.indexOf(0), child[i]);
-            next_node.parent=clone(node);
-            next_node.h2 = h2(next_node.state);
-            //next_node.g = node.g + 1;
-           // next_node.cost = next_node.h2 + next_node.g;
-
-            if (close.some(function (element) {
-                    return is_same_array(element.state, next_node.state);
-                })) {
-                continue;
-            }
-
-            if (open.some(function (element) {
-                    return is_same_array(element.state, next_node.state);
-                })) {
-                continue;
-                //open.forEach(function (element, index) {
-                //    if (is_same_array(element.state, next_node.state)) {
-                //        if (element.g > next_node.g) {
-                //            element.parent = clone(next_node.parent);
-                //            element.g = next_node.g;
-                //        }
-                //    }
-                //
-                //});
-
-            }
-
-            open.push(clone(next_node));
-        }
-
-        open.sort(function (a, b) {
-            if (a.h2 < b.h2)
-                return -1;
-
-            if (a.h2 > b.h2)
-                return 1;
-
-            return 0;
-        });
-
-        node = clone(open[0]);
     }
 
+    var moves = [];
+    for (var current = open[0]; current!= null; current = current.parent) {
+        console.log(current);
+        moves.push(current);
+    }
+    moves.reverse();
+
+    return moves;
 
 };
 
-var start = function () {
 
-    var field = init();
+var find_node = function (array, node) {
+    var ind = -1;
+    array.forEach(function (element, index) {
+        if (element.state == node.state) {
+            ind = index;
+        }
+    });
+    return ind;
+}
+var start = function (field) {
+
+
+
     if (!has_solution(field)) {
         console.log("решений нет");
         return;
     }
     var path = solver(field);
-
-    console.log(path.length,path[path.length-1]);
+    return path;
 
 
 };
@@ -228,4 +264,6 @@ function clone(obj) {
     return c;
 }
 
-start();
+if (module !== undefined) {
+    start();
+}
