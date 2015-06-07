@@ -1,37 +1,23 @@
-/**
- * Created by mainn_000 on 07.06.2015.
- */
 
 var canvas = new fabric.Canvas('c');
-var offset = 4;
+var OFFSET = 4;
 var img = {};
 var interval;
+var img_names = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15"];
 
-var diff = function (array1, array2) {
+var field_diff = function (field_one, field_two) {
 
     var diff = [];
-    if (array1.length != array2.length)
+    if (field_one.length != field_two.length)
         return;
-    for (var i = 0; i < array1.length; i++) {
-        if (array1[i] != array2[i]) {
+    for (var i = 0; i < field_one.length; i++) {
+        if (field_one[i] != field_two[i]) {
             diff.push(i);
         }
     }
     return diff;
 };
-
-var create_img = function (i, j) {
-
-    var png = (j + offset * i) + 1;
-
-    fabric.Image.fromURL('img/' + png + '.png', function (oImg) {
-        oImg.left = j * 100;
-        oImg.top = i * 100;
-        img[(j + offset * i) + 1] = oImg;
-        canvas.add(oImg);
-    });
-};
-var flip_img = function (from, to, timeout) {
+var swap_img = function (from, to, timeout) {
     var from_left = from.getLeft();
     var from_top = from.getTop();
 
@@ -64,35 +50,34 @@ var new_field = function () {
 
     for (var i = 0; i < start_state.length; i++) {
         var ind = start_state[i];
-        img[ind].left = (i % offset) * 100;
-        img[ind].top = ~~(i / offset) * 100;
+        img[ind].left = (i % OFFSET) * 100;
+        img[ind].top = ~~(i / OFFSET) * 100;
         canvas.add(img[ind]);
     }
     return start_state;
 };
-var img_names = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15"];
+
 async.map(img_names, function (name, callback) {
     fabric.Image.fromURL('img/' + name + '.png', function (oImg) {
         callback(null, {name: name, img: oImg});
     });
 
 }, function (error, results) {
-    console.log(results);
+
     if (error)
         console.log(error);
     results.forEach(function (element) {
         img[element.name] = element.img;
     });
 
-    // console.log(moves[0]);
-   var field= new_field();
+    var field = new_field();
 
     var start_bt = document.getElementById('start');
     var pause_bt = document.getElementById('pause');
     var restart_bt = document.getElementById('restart');
-
     var j = 1;
     var moves;
+
     start_bt.onclick = function () {
         if (j == 1) {
             moves = start(field);
@@ -102,11 +87,11 @@ async.map(img_names, function (name, callback) {
         var timeout = 100;
         interval = setInterval(function () {
             var next = moves[j].state;
-            var change = diff(current, next);
+            var change = field_diff(current, next);
 
             var img1 = current[change[0]];
-            var img2 = current[change[1]]
-            flip_img(img[img1], img[img2], timeout);
+            var img2 = current[change[1]];
+            swap_img(img[img1], img[img2], timeout);
             current = next;
             j++;
             if (j == moves.length)
@@ -120,7 +105,7 @@ async.map(img_names, function (name, callback) {
 
     restart_bt.onclick = function () {
         pause();
-        field=new_field();
+        field = new_field();
         j = 1;
     }
 
