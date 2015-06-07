@@ -1,12 +1,10 @@
-/**
- * Created by mainn_000 on 03.06.2015.
- */
 "use strict";
+
+var OFFSET = 4;
 
 var has_solution = function (field) {
     var zero_index = field.indexOf(0);
-    var offset = 4;
-    var zero_row = ~~(zero_index / offset) + 1;
+    var zero_row = ~~(zero_index / OFFSET) + 1;
     var N = 0;
 
     for (var i = 0; i < 16; i++) {
@@ -26,38 +24,41 @@ var has_solution = function (field) {
     if (N % 2 == 0)
         return true;
 };
+
 var manhattan = function (i, j) { //manhattan distance
-    var offset = 4;
-    var yi = Math.floor(i / offset);
-    var xi = i % offset;
-    var yj = Math.floor(j / offset);
-    var xj = j % offset;
+
+    var yi = Math.floor(i / OFFSET);
+    var xi = i % OFFSET;
+    var yj = Math.floor(j / OFFSET);
+    var xj = j % OFFSET;
 
     return (Math.abs(xi - xj) + Math.abs(yi - yj));
 };
-var flip = function (array, from, to) {
+
+var swap_states = function (array, from, to) {
     var tmp = array[to];
     array[to] = array[from];
     array[from] = tmp;
     return array;
 };
+
 var valid_move = function (field) {
     var moviable = [];
-    var offset = 4;
+
     var start = field.indexOf(0);
-    var has_left_cell = (start % offset) - 1 >= 0;
-    var has_right_cell = (start % offset) + 1 < offset;
-    var has_top_cell = start - offset >= 0;
-    var has_bottom_cell = start + offset < field.length;
+    var has_left_cell = (start % OFFSET) - 1 >= 0;
+    var has_right_cell = (start % OFFSET) + 1 < OFFSET;
+    var has_top_cell = start - OFFSET >= 0;
+    var has_bottom_cell = start + OFFSET < field.length;
 
     if (has_left_cell)
-        moviable.push(flip(copy(field), start, start - 1));
+        moviable.push(swap_states(copy(field), start, start - 1));
     if (has_right_cell)
-        moviable.push(flip(copy(field), start, start + 1));
+        moviable.push(swap_states(copy(field), start, start + 1));
     if (has_top_cell)
-        moviable.push(flip(copy(field), start, start - offset));
+        moviable.push(swap_states(copy(field), start, start - OFFSET));
     if (has_bottom_cell)
-        moviable.push(flip(copy(field), start, start + offset));
+        moviable.push(swap_states(copy(field), start, start + OFFSET));
 
     return moviable;
 };
@@ -77,89 +78,50 @@ var h2 = function (state) {
 
     return dist;
 };
-var is_same_array = function (array1, array2) {
+var is_same_field = function (field_one, field_two) {
     var equal = true;
-    if (array1.length != array2.length)
+    if (field_one.length != field_two.length)
         return;
 
-    for (var i = 0; i < array1.length; i++) {
-        if (array1[i] != array2[i]) {
+    for (var i = 0; i < field_one.length; i++) {
+        if (field_one[i] != field_two[i]) {
             equal = false;
         }
     }
     return equal;
 };
+var sorter = function (field) {
+    field.sort(function (a, b) {
+        return a.h2 - b.h2;
+    });
+};
 
-function shuffle(N){
-    var state=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 0];
-    //var zero=state.indexOf(0);
-    var closed={};
-    for (var i=0;i<N;i++){
-        var child=valid_move(state);
-        var rand=~~(Math.random()*child.length);
-        if(finded_in_close(closed,child[rand].toString())){
+var finded_in_close = function (close, hash) {
+    return (close[hash] !== undefined);
+};
+
+var copy = function (array) {
+    return [].concat(array);
+};
+
+var shuffle = function (N) {
+    var state = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 0];
+    var closed = {};
+
+    for (var i = 0; i < N; i++) {
+        var child = valid_move(state);
+        var rand = ~~(Math.random() * child.length);
+        if (finded_in_close(closed, child[rand].toString())) {
             i--;
             continue;
         }
 
-       state = child[rand];
-        closed[child[rand].toString()]=true;
+        state = child[rand];
+        closed[child[rand].toString()] = true;
     }
+
     return state;
-
-
-}
-function init() {
-    //return [2, 6, 12, 11, 0, 3, 4, 14, 9, 5, 1, 15, 8, 7, 13, 10];
-    //return [ 1, 14, 2, 7, 0, 3, 12, 15, 10, 6, 11, 8, 4, 9, 13, 5 ];
-    //return [0, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1];
-    //return [15,11,12,0,5,13,2,1,14,7,4,3,10,6,9,8];
-    //return [2,6,4,3, 9,5,7,1, 13,15,12,0,8,10,14,11];
-    //return [10,3,5,15,12,8,7,0,11,1,4,14,6,2,13,9];
-    return [1,2,3,4,5,6,7,8,9,10,11,12,0,13,14,15];
-
-    var i, j;
-
-    var field = [];
-
-    var current = 0;
-    var offset = 4;
-
-do {
-    for (i = 0; i < 16; i++) {
-
-        current = Math.floor(Math.random() * 16);
-
-        if (field.length == 0) {
-            field.push(current);
-        }
-        else if (field.indexOf(current) >= 0) {
-            do {
-                current = Math.floor(Math.random() * 16);
-            }
-            while (field.indexOf(current) >= 0);
-            field.push(current);
-        }
-        else
-            field.push(current);
-    }
-}
-while(h2(field)>40);
-
-    return field;
-}
-
-
-function sorter(array) {
-    array.sort(function (a, b) {
-        return a.h2 - b.h2;
-    });
-}
-
-function finded_in_close(close, hash) {
-    return (close[hash] !== undefined);
-}
-
+};
 var solver = function (field) {
 
     var open = [],
@@ -179,7 +141,7 @@ var solver = function (field) {
 
         var current_node = open[0];
 
-        if (is_same_array(current_node.state, goal))
+        if (is_same_field(current_node.state, goal))
             break;
 
         open.splice(0, 1);
@@ -190,23 +152,23 @@ var solver = function (field) {
         close[current_node.state.toString()] = true;
 
         for (var i = 0; i < child_len; i++) {
-            var current = child[i];
-            var current_hash = current.toString();
+            var current_state = child[i];
+            var current_hash = current_state.toString();
 
             if (finded_in_close(close, current_hash))
                 continue;
 
             open.push({
-                state:current,
-                parent:current_node,
-                h2:h2(current)
+                state: current_state,
+                parent: current_node,
+                h2: h2(current_state)
             });
         }
 
     }
 
     var moves = [];
-    for (var current = open[0]; current!= null; current = current.parent) {
+    for (var current = open[0]; current != null; current = current.parent) {
         console.log(current);
         moves.push(current);
     }
@@ -216,53 +178,15 @@ var solver = function (field) {
 
 };
 
-
-var find_node = function (array, node) {
-    var ind = -1;
-    array.forEach(function (element, index) {
-        if (element.state == node.state) {
-            ind = index;
-        }
-    });
-    return ind;
-}
 var start = function (field) {
-
-
 
     if (!has_solution(field)) {
         console.log("решений нет");
         return;
     }
-    var path = solver(field);
-    return path;
 
-
+    return solver(field);
 };
-
-var copy = function (array) {
-    return [].concat(array);
-
-};
-function clone(obj) {
-    if (!obj || 'object' !== typeof obj) {
-        return obj;
-    }
-    var c = 'function' === typeof obj.pop ? [] : {};
-    var p, v;
-    for (p in obj) {
-        if (obj.hasOwnProperty(p)) {
-            v = obj[p];
-            if (v && 'object' === typeof v) {
-                c[p] = clone(v);
-            }
-            else {
-                c[p] = v;
-            }
-        }
-    }
-    return c;
-}
 
 if (module !== undefined) {
     start();
